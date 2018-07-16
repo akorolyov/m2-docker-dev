@@ -1,0 +1,17 @@
+filebeat.prospectors:
+- type: log
+  paths:
+    - /var/www/var/log/system.log
+  tags: ["system"]
+
+- type: log
+  paths:
+    - /var/www/var/log/exception.log
+  tags: ["exception"]
+  multiline.pattern: '^\['
+  multiline.negate: true
+  multiline.match: after
+  
+output.logstash:
+  hosts: ["172.99.22.199:4000"]
+

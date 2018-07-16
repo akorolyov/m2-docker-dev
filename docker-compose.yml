@@ -1,0 +1,121 @@
+version: '3'
+services:
+    m2dev23.dev:
+        container_name: m2dev23
+        hostname: m2dev23
+        domainname: dev
+        image: maventeam/m2dev23
+        working_dir: /var/www
+        ports:
+          - 80:80
+          - 443:443
+        depends_on:
+          - "openssel.m2dev23.dev"
+        volumes:
+          # base dir of magento:
+          - "./src:/var/www:cached"
+          #configs:
+            #supervisord configs
+          - "./etc/supervisord.conf:/etc/supervisor/conf.d/supervisord.conf"
+            #nginx configs
+          - "./etc/nginx/magento.conf:/etc/nginx/sites-available/default"
+          - "./etc/nginx/nginx.conf:/etc/nginx/nginx.conf"
+          - "./etc/nginx/ssl:/etc/nginx/ssl"
+            #php configs
+          - "./etc/php-fpm/magento.conf:/usr/local/etc/php-fpm.d/zz-magento.conf"
+          - "./etc/php-fpm/20-xdebug.ini:/etc/php/7.0/fpm/conf.d/20-xdebug.ini"
+          - "./etc/php-fpm/php.ini:/usr/local/etc/php/php.ini"
+          #logs:
+          - "./logs/nginx:/var/log/nginx"
+          - "./logs/php-fpm:/var/log/php-fpm"
+          #datasource
+          - "./datasource:/datasource"
+          #utils
+          - "./utils:/utils"
+          #venia theme
+        command: ["/usr/bin/supervisord"]
+#        tmpfs:
+#          - /var/www/pub/static
+        environment:
+          - "MAGE_ROOT=/var/www/"
+          - "MAGE_MODE=developer"
+        working_dir: /var/www
+#        networks:
+#          m2dev23-net:
+#            ipv4_address: 172.99.12.2
+
+    db.m2dev23.dev:
+        container_name: m2dev23.db
+        image: mysql:5.7
+        environment:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_USER: magento
+          MYSQL_PASSWORD: password
+          MYSQL_DATABASE: magento23
+        volumes:
+          - "./data/mysql:/var/lib/mysql:delegated"
+#        networks:
+#          m2dev23-net:
+#            ipv4_address: 172.99.12.3
+
+    openssel.m2dev23.dev:
+        container_name: m2dev23.openssl
+        image: frapsoft/openssl
+        environment:
+          DOMAIN: "dev23.m2.test"
+        volumes:
+          # ssl location
+          - "./etc/nginx/ssl:/etc/nginx/ssl"
+          #utils
+          - "./utils:/utils"
+        entrypoint: /bin/sh
+        command: ["/utils/sslconfig.sh"]
+
+    redis.m2dev23.dev:
+        container_name: m2dev23.redis
+        image: redis
+#        networks:
+#          m2dev23-net:
+#            ipv4_address: 172.99.12.4
+
+#    elastic.m2dev23.dev:
+#        container_name: m2dev23.elastic
+#        hostname: elastic.m2dev23
+#        domainname: dev
+#        environment:
+#          - http.host=0.0.0.0
+#          - transport.host=127.0.0.1
+#          - bootstrap.memory_lock=true
+#          - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+#          - xpack.security.enabled=false
+#        image: docker.elastic.co/elasticsearch/elasticsearch:5.3.1
+#        ulimits:
+#          memlock:
+#            soft: -1
+#            hard: -1
+#          nofile:
+#            soft: 270000
+#            hard: 270000
+#        volumes:
+#          - "./data/elastic:/usr/share/elasticsearch/data"
+#        networks:
+#          m2dev23-net:
+#            ipv4_address: 172.99.12.5
+#     filebeat:
+#       image: docker.elastic.co/beats/filebeat:6.2.2
+#       volumes:
+#         - "./src:/var/www:ro"
+#         - "./etc/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro"
+#       networks:
+#         monitoring:
+#network configuration
+#networks:
+#  m2dev23-net:
+#    driver: bridge
+#    ipam:
+#      driver: default
+#      config:
+#        - subnet: 172.99.12.0/24
+  # monitoring:
+  #   external:
+  #     name: elkstack_monitoring
